@@ -1,6 +1,6 @@
 <?php
 /*
-  Version: 0.1
+  Version: 1.0.0
   Author: Chris MacKay
   Author URI: http://cloudminr.com/chris-mackay
   License: FreeBSD
@@ -29,7 +29,7 @@
   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
   @package cloudminr
-  @since cloudminr 0.1
+  @since cloudminr 1.0.0
 */
   if (is_numeric($current_user->ID)){
 	  if ( ('POST' == $_SERVER['REQUEST_METHOD']) && (isset($_POST['action'])) && ($_POST['action'] == 'add-pool') ){
