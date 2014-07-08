@@ -1,0 +1,151 @@
+  mysql_connect(DB_HOST, DB_USER, DB_PASSWORD) or die(mysql_error());
+  mysql_select_db(DB_NAME) or die(mysql_error());
+  $start_time = microtime(true);
+	function pool_walker ($pool_account_id, $batch_id, $time = "hour"){
+	  // COUNT THE WORKER IDS IN THIS POOL
+		$sql = "SELECT COUNT(DISTINCT(worker_id)) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pool_account_id."'";
+		$worker_id_query = mysql_query($sql) or die(mysql_error());
+		$row = mysql_fetch_array($worker_id_query);
+		$count = $row[0];
+		if ($count >= 1){
+		  // FOUND WORKER IDS
+		  $sql = "SELECT DISTINCT(worker_id) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pool_account_id."'";
+			$worker_query = mysql_query($sql) or die(mysql_error());
+			while ($workers = mysql_fetch_array($worker_query)){
+				// $sql = "SELECT id, pool_account_id, user_id, batch_id, worker_id, worker_name, hashrate FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pools['pool_account_id']."' AND worker_id='".$workers['worker_id']."' ORDER BY updated DESC LIMIT 60";
+		    if ($time == 'hour'){
+				  $expected_count = $count * 61;
+          $sql = "SELECT COUNT(id) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT ".$expected_count;
+          $count_id_query = mysql_query($sql) or die(mysql_error());
+          $count_id_row = mysql_fetch_array($count_id_query);
+          $count_id = $count_id_row[0];
+          if ($count_id >= $expected_count){
+		        $sql = "SELECT id, created_date, created_time, pool_account_id, user_id, batch_id, worker_id, worker_name, hashrate, worker_count FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pool_account_id."' AND worker_id='".$workers['worker_id']."' ORDER BY updated ASC LIMIT 60";
+          } else {
+            print 'Less than '.$expected_count.' rows to process, quitting...'.PHP_EOL;
+            return;
+          }
+		    }
+		    $worker_hashrate = 0;
+		    $loop_count = 0;
+        $average = 0;
+		    $worker_data_query = mysql_query($sql) or die(mysql_error());
+		    while ($worker_data = mysql_fetch_array($worker_data_query)){
+		      // WALKING THROUGH WORKER DATA AND SETTING VARIABLES
+		      $loop_count++;
+          if ($loop_count == 1){
+            $created_date = $worker_data['created_date'];
+		        $created_time = $worker_data['created_time'];
+          }
+		      $worker_hashrate = $worker_hashrate + $worker_data['hashrate'];
+			    $worker_user_id = $worker_data['user_id'];
+			    $worker_name = $worker_data['worker_name'];
+          $pool_account_id = $worker_data['pool_account_id'];
+					$worker_count = $worker_data['worker_count'];
+			    $update_sql = "UPDATE ".DB_PREFIX."cloudminr_stats SET tabulated='1' WHERE id='".$worker_data['id']."' AND pool_account_id='".$worker_data['pool_account_id']."' AND user_id='".$worker_data['user_id']."' AND worker_id='".$workers['worker_id']."'";
+			    // print $update_sql;
+          $update_query = mysql_query($update_sql) or die(mysql_error());
+			    if ($update_query){
+			      echo 'Yay tabulated!'.PHP_EOL;
+			    } else {
+			      echo 'Boo not tabulated!'.PHP_EOL;
+			    }
+		    }
+		    // CALCULATE AVERAGE
+		    $average = $worker_hashrate / $loop_count;
+		    if ($loop_count >= 1){
+		      if ($time == 'hour'){
+		        $insert_sql = "INSERT INTO ".DB_PREFIX."cloudminr_stats_hourly SET active='1', locked='0', created_date='".$created_date."', created_time='".$created_time."', tabulated='0', created_by_id='0', ";
+			    }
+		      $insert_sql .= "user_id='".$worker_user_id."', ";
+          $insert_sql .= "pool_account_id='".$pool_account_id."', ";
+		      $insert_sql .= "batch_id='".$batch_id."', ";
+		      $insert_sql .= "worker_id='".$workers['worker_id']."', ";
+		      $insert_sql .= "worker_name='".$worker_name."', ";
+		      $insert_sql .= "hashrate='".$average."',";
+			    $insert_sql .= "worker_count='".$worker_count."'";
+		      // echo $insert_sql.PHP_EOL;
+		      $insert_query = mysql_query($insert_sql) or die(mysql_error());
+		      if ($insert_query){
+		        echo PHP_EOL.'Yay average written to database!'.PHP_EOL;
+		      } else {
+		        echo PHP_EOL.'Not written to database (average)'.PHP_EOL;
+		      }
+		    }
+		    // END WORKERS LOOP
+		    			
+			}
+			// CHECK FOR MORE ENTRIES TO TABULATE
+		  if ($time == 'hour'){
+		    $expected_count = $worker_count * 61;
+		    $sql = "SELECT COUNT(id) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT ".$expected_count;
+			  $time = 'hour';
+		  }
+			print $expected_count.' = '.$worker_count.PHP_EOL;
+		  $count_query = mysql_query($sql) or die(mysql_error());
+		  $row = mysql_fetch_array($count_query);
+		  $count = $row[0];
+		  if ($count >= $expected_count){
+		    // ENERATE BATCH ID
+		    $batch_id = $batch_id + 1;
+        // END GENERATE BATCH ID
+		    pool_walker($pool_account_id, $batch_id, $time);
+		  }
+			// END POOL LOOP
+		}
+	  // END CHECK END FUNCTION
+	}
+  //C OUNT THE IDS OF THE UNIQUE ACTIVE POOLS
+	$sql = "SELECT COUNT(DISTINCT(pool_account_id)) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' ORDER BY pool_account_id ASC";
+	$query = mysql_query($sql) or die(mysql_error());
+  $row = mysql_fetch_array($query);
+	$count = $row[0];
+	if ($count >= 1){
+	  // FIND THE IDS OF THE UNIQUE ACTIVE POOLS
+	  $sql = "SELECT DISTINCT(pool_account_id) FROM ".DB_PREFIX."cloudminr_stats WHERE active='1' AND locked='0' AND tabulated='0' ORDER BY pool_account_id ASC";
+		$pool_query = mysql_query($sql) or die(mysql_error());
+		while ($pools = mysql_fetch_array($pool_query)){
+		  if ($pools['pool_account_id'] == 0){
+			  continue;
+			}
+			// GENERATE BATCH ID
+			// FIND NUMBER OF WORKERS IN POOL
+			$sql = "SELECT COUNT(DISTINCT(worker_id)) FROM ".DB_PREFIX."cloudminr_workers WHERE active='1' AND locked='0' AND pool_account_id='".$pools['pool_account_id']."' ORDER BY updated DESC";
+			$count_workers_query = mysql_query($sql) or die(mysql_error());
+      $count_workers_row = mysql_fetch_array($count_workers_query);
+      $workers_count = $count_workers_row[0];
+			if ( (empty($workers_count)) || (!is_numeric($workers_count)) ){
+			  $workers_count = 0;
+			}
+			// FIND THE LAST BATCH ID USED FOR THIS POOL
+		  $sql = "SELECT batch_id FROM ".DB_PREFIX."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND tabulated='0' AND pool_account_id='".$pools['pool_account_id']."' ORDER BY updated DESC LIMIT 1";
+			$batch_id_query = mysql_query($sql) or die(mysql_error());
+      $batch_row = mysql_fetch_array($batch_id_query);
+      $batch_id = $batch_row[0];
+			if ( (empty($batch_id)) || (!is_numeric($batch_id)) ){
+			  // NO BATCH ID FOUND, START AT 1
+			  $batch_id = 1;
+			}
+			// FIND NUMBER OF ENTRIES FOR THIS BATCH ID
+			$sql = "SELECT COUNT(DISTINCT(worker_id)) FROM ".DB_PREFIX."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pools['pool_account_id']."' AND batch_id='".$batch_id."' ORDER BY updated DESC";
+			$count_batch_workers_query = mysql_query($sql) or die(mysql_error());
+      $count_batch_workers_row = mysql_fetch_array($count_batch_workers_query);
+      $batch_workers_count = $count_batch_workers_row[0];
+			if ( (empty($batch_workers_count)) || (!is_numeric($batch_workers_count)) ){
+			  $batch_workers_count = 0;
+			}
+			if ($batch_workers_count == $workers_count){
+			  $batch_id = $batch_id + 1;
+			}
+			// END GENERATE
+			pool_walker($pools['pool_account_id'], $batch_id);
+			// print $batch_id.PHP_EOL;
+		}
+  }	else {
+	  // print $sql.PHP_EOL;
+	  echo "Nothing to process.".PHP_EOL;
+	}
+	$end_time = microtime(true);
+	$run_time = $end_time - $start_time;
+	echo $run_time.PHP_EOL;
+?>
