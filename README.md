@@ -4,7 +4,7 @@ HashWatchr Free
 Description
 ===========
 
-CloudMinr's HashWatchr is a WordPress plugin that provides a customizable dashboard by polling [MPOS](https://github.com/MPOS/php-mpos) (by [TheSerapher](https://github.com/TheSerapher)) Pools for statistically information on Workers.
+CloudMinr's HashWatchr is a WordPress plugin that provides a customizable dashboard by polling [MPOS](https://github.com/MPOS/php-mpos) (by [TheSerapher](https://github.com/TheSerapher)) Pools for statistical information on Workers.
 
 It was created by [Chris MacKay](https://www.google.com/+ChrisMacKay) with [CloudMinr](https://www.github.com/CloudMinr) and is released under the FreeBSD license for all to use as they please.
 
