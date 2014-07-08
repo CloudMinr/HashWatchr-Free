@@ -20,7 +20,6 @@ Donations to this project are going directly to [CloudMinr](https://github.com/C
 * LTC address: `LcBaqteAhRVXqpqcVfQrKKDT1SXrBH2P6F`
 * BTC address: `1JtRRaGrdBvw4377KPPS3vSz2JRQHhC7Dq`
 * DRK address: `XboFMXdGDwrKAFeKSKY5iqF1Twd886k4mQ`
-* DOGE address: 
 * YUM address: `Yc5KXyfw1ytzdxha8Vgrjf3j6m3Fq3KB5n`
 
 Donors
