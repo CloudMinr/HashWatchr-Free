@@ -171,10 +171,10 @@ function cloudminr_init_pages(){
 	$active_theme_name = $active_theme->get('Name');
 	if ($active_theme_name == 'Flat Theme'){
 	  $the_plugin_header = 'external';
-		$sql = "SELECT COUNT(term_id) FROM ".$wpdb->prefix."terms WHERE name LIKE '%HashWatchr%Main%' AND slug LIKE '%main%' AND term_group='0'";
+		$sql = "SELECT COUNT(term_id) FROM ".$wpdb->prefix."terms WHERE name LIKE '%HashWatchr%Main%' AND slug LIKE '%hashwatchr-main%' AND term_group='0'";
 	  $count = $wpdb->get_var($sql);
 	  if ($count <= 0){
-	    $insert_sql = "INSERT INTO ".$wpdb->prefix."terms SET name='HashWatchr Main', slug='main', term_group='0'";
+	    $insert_sql = "INSERT INTO ".$wpdb->prefix."terms SET name='HashWatchr Main', slug='hashwatchr-main', term_group='0'";
 		  if ($wpdb->query($insert_sql)){
 		    $term_id = $wpdb->insert_id;
 		  } else {
@@ -183,7 +183,7 @@ function cloudminr_init_pages(){
 			  }
 	    }
 	  } else {
-	    $sql = "SELECT term_id FROM ".$wpdb->prefix."terms WHERE name='HashWatchr Main' AND slug='main' AND term_group='0'";
+	    $sql = "SELECT term_id FROM ".$wpdb->prefix."terms WHERE name LIKE '%HashWatchr%Main%' AND slug LIKE '%hashwatchr-main%' AND term_group='0'";
 	    $term_id = $wpdb->get_var($sql);
 	  }
 	  $sql = "SELECT COUNT(term_taxonomy_id) FROM ".$wpdb->prefix."term_taxonomy WHERE term_id='".$term_id."' AND taxonomy='nav_menu' AND parent='0'";
@@ -202,8 +202,8 @@ function cloudminr_init_pages(){
 	    $term_taxonomy_id = $wpdb->get_var($sql);
 	  }
     $nav_locations = get_theme_mod('nav_menu_locations');
-    $nav_locations['primary'] = $term_taxonomy_id;
-		$nav_locations['footer'] = $term_taxonomy_id;
+    $nav_locations['primary'] = $term_id;
+		$nav_locations['footer'] = $term_id;		
     set_theme_mod('nav_menu_locations', $nav_locations);
 	  include_once('cloudminr_init_pages.php');
 	} else {
