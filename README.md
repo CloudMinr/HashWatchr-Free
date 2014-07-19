@@ -8,7 +8,7 @@ CloudMinr's HashWatchr is a WordPress plugin that provides a customizable dashbo
 
 It was created by [Chris MacKay](https://www.google.com/+ChrisMacKay) with [CloudMinr](https://www.github.com/CloudMinr) and is released under the FreeBSD license for all to use as they please.
 
-Support requests can be made at http://support.hashwatchr.com
+Problems or issues can be reported on [GitHub](https://github.com/CloudMinr/HashWatchr-Free/issues) or in #HashWatchr on irc.freenode.net.
 
 **NOTE**: This project is still under development and commits are happening regularly. I do not recommend using this code for a production setup as of yet and should wait for the Release. Anyone willing to test HashWatchr and provide feedback is greatly appreciated, though!
 
