@@ -148,7 +148,7 @@
 				  $html .= '<input type="hidden" name="user_id" value="'.$current_user->ID.'">'.PHP_EOL;
 		      $html .= '<button class="btn btn-lg btn-primary btn-block" type="submit">Save</button>'.PHP_EOL;
 				  $html .= '<div class="btn btn-lg btn-primary btn-block" style="background-color: #A00000;" ><a style="color: #fff; text-decoration: none;" href="./?section=delete-pool&pool='.$_GET['pool'].'" onclick="';
-				  $html .= "return confirm('Are you sure you wish to delete the Pool ".$cloudminr_pool['pool_name']."?')";
+				  $html .= "return confirm('Are you sure you wish to delete the Pool ".$cloudminr_pool['pool_name']."? This action will remove the Pool ".$cloudminr_pool['pool_name']." and its associated Minrs from HashWatchr interfaces as well as permanently delete the data collected thus far. Are you absolutely sure?')";
 				  $html .= '">Delete '.$cloudminr_pool['pool_name'].'</a></div>'.PHP_EOL;
 		    $html .= '</div>'.PHP_EOL;
 	    $html .= '</div>'.PHP_EOL;

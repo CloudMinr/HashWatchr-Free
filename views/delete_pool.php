@@ -75,18 +75,19 @@
 			        $error = 1;
 			      }
 			    }
-					
-					
-			    $sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats WHERE active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
-			    $count = $wpdb->get_var($sql);
-			    if ($count >= 1){
-			      $update_sql = "UPDATE ".$wpdb->prefix."cloudminr_stats_hourly SET active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
-			      $update = $wpdb->query($update_sql);
-			      if ($update){
-			        $error = 0;
-			      } else {
-			        $error = 1;
-			      }
+					$update_sql = "DROP TABLE IF EXISTS ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id;
+				  $update = $wpdb->query($update_sql);
+			    if ($update){
+			      $error = 0;
+			    } else {
+			      $error = 1;
+			    }
+				  $update_sql = "DROP TABLE IF EXISTS ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id]."_".$result->worker_id;
+				  $update = $wpdb->query($update_sql);
+			    if ($update){
+			      $error = 0;
+			    } else {
+			      $error = 1;
 			    }
 			  }
 			}

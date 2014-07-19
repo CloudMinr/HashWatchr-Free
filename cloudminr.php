@@ -93,6 +93,7 @@ function cloudminr_install() {
 		worker_id bigint(20) NOT NULL,
 		minute int(1) DEFAULT '0' NOT NULL,
 		hour int(1) DEFAULT '0' NOT NULL,
+		worker_count bigint(4) DEFAULT '0',
     UNIQUE KEY id (id)
   );";
   dbDelta($sql);
@@ -113,6 +114,7 @@ function cloudminr_install() {
 		worker_id bigint(20) NOT NULL,
 		hour int(1) DEFAULT '0' NOT NULL,
 		week int(1) DEFAULT '0' NOT NULL,
+		worker_count bigint(4) DEFAULT '0',
     UNIQUE KEY id (id)
   );";
   dbDelta($sql);

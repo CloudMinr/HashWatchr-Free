@@ -154,7 +154,7 @@
 				    $html .= '">Enable '.$cloudminr_worker['name'].'</a></div>'.PHP_EOL;
 				  }
 				  $html .= '<div class="btn btn-lg btn-primary btn-block" style="background-color: #A00000;" ><a style="color: #fff; text-decoration: none;" href="./?section=delete-worker&worker='.$_GET['worker'].'" onclick="';
-			  	$html .= "return confirm('Are you sure you wish to delete the Minr ".$cloudminr_worker['name']."? This action will remove the Minr ".$cloudminr_worker['name']." from HashWatchr interfaces as well as the data collected thus far. Are you absolutely sure?')";
+			  	$html .= "return confirm('Are you sure you wish to delete the Minr ".$cloudminr_worker['name']."? This action will remove the Minr ".$cloudminr_worker['name']." from HashWatchr interfaces as well as permanently delete the data collected thus far. Are you absolutely sure?')";
 			    $html .= '">Delete '.$cloudminr_worker['name'].'</a></div>'.PHP_EOL;
 		    $html .= '</div>'.PHP_EOL;
 	    $html .= '</div>'.PHP_EOL;
