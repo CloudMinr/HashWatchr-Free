@@ -1,6 +1,6 @@
 <?php
 /*
-  Version: 1.0.0
+  Version: 1.5.0
   Author: Chris MacKay
   Author URI: http://cloudminr.com/chris-mackay
   License: FreeBSD

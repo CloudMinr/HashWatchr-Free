@@ -3,7 +3,7 @@
   Plugin Name: CloudMinr's HashWatchr
   Plugin URI: http://www.github.com/CloudMinr/HashWatchr
   Description: A customizable dashboard that uses the MPOS API to provide statistics
-  Version: 1.0.0
+  Version: 1.5.0
   Author: Chris MacKay
   Author URI: http://cloudminr.com/chris-mackay
   License: FreeBSD
