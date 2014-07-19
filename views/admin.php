@@ -81,7 +81,7 @@
 				  } else {
 				    $html .= '<div class="col-sm-2 col-sm-offset-4" style="text-align: center;"><h5>'.PHP_EOL;
 					    $html .= '<a href="./?section=edit-worker&worker='.$cloudminr_worker->id.'"><i class="icon-2x icon-edit"></i></a>'.PHP_EOL;
-					    $html .= '<a href="./?section=charts-beta&pool='.$cloudminr_worker->pool_account_id.'&worker='.$cloudminr_worker->id.'"><i class="icon-2x icon-bar-chart"></i></a>'.PHP_EOL;
+					    $html .= '<a href="./?section=charts&pool='.$cloudminr_worker->pool_account_id.'&worker='.$cloudminr_worker->id.'"><i class="icon-2x icon-bar-chart"></i></a>'.PHP_EOL;
 					  $html .= '</h5></div>'.PHP_EOL;
 				  }
 	      $html .= '</div>'.PHP_EOL;

@@ -153,7 +153,7 @@
 			  $html .= '<div class="col-sm-2 col-sm-offset-2"><h3><strong>Actions</h3></strong></div>'.PHP_EOL;
 	    $html .= '</div>'.PHP_EOL;
 		  $html .= '<div style="margin: 0 0 5px 0; border-top: 1px solid #C0C0C0;"></div>';
-		  $sql = "SELECT batch_id FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' and pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 1";
+		  $sql = "SELECT batch_id FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' and pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 1";
 		  $batch_id = $wpdb->get_var($sql);
 		  if ((empty($batch_id)) || ($batch_id < 1)){
 		    $batch_id = 0;
@@ -163,12 +163,12 @@
 		  if ($count >= 1){
 		    if (isset($_GET['order_by'])){
 				  if (isset($_GET['dir'])){
-				    $sql = "SELECT id, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY ".$_GET['order_by']." ".$_GET['dir'];
+				    $sql = "SELECT id, updated, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY ".$_GET['order_by']." ".$_GET['dir'];
 				  } else {
-				    $sql = "SELECT id, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY ".$_GET['order_by']." ASC";
+				    $sql = "SELECT id, updated, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY ".$_GET['order_by']." ASC";
 				  }
 			  } else {
-				  $sql = "SELECT id, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY name ASC";				  
+				  $sql = "SELECT id, updated, pool_account_id, name, worker_id FROM ".$wpdb->prefix."cloudminr_workers WHERE pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY name ASC";				  
 			  }
 			  $results = $wpdb->get_results($sql);
 			  $hashrate_total = 0;
@@ -179,7 +179,7 @@
 					  $html .= '<div class="col-sm-2"><h3>'.$result->name.'</h3></div>'.PHP_EOL;
 					  $html .= '<div class="col-sm-2"><h3>'.$result->worker_id.'</h3></div>'.PHP_EOL;
 				    $html .= '<div class="col-sm-2"><h3>'.$pool_name.'</h3></div>'.PHP_EOL;
-					  $sql = "SELECT hashrate FROM ".$wpdb->prefix."cloudminr_stats WHERE batch_id='".$batch_id."' AND pool_account_id='".$result->pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY created_date DESC LIMIT 1";
+					  $sql = "SELECT hashrate FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$result->pool_account_id."_".$result->worker_id." WHERE batch_id='".$batch_id."' AND pool_account_id='".$result->pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."' AND active='1' AND locked='0' ORDER BY created_date DESC LIMIT 1";
 					  $hashrate = $wpdb->get_var($sql);
 					  if (!isset($hashrate)){
 					    $hashrate_display = 'No Data';
@@ -195,6 +195,7 @@
 		      $html .= '</div>'.PHP_EOL;
 			    $html .= '<div style="margin: 0 0 5px 0; border-top: 1px solid #C8C8C8;"></div>';
 				  $hashrate_total = $hashrate_total + $hashrate;
+					$updated = $result->updated;
 			  }
 		  } else {
 		    $html .= '<div class="row">'.PHP_EOL;
@@ -227,13 +228,21 @@
 		  $html .= '</div>'.PHP_EOL;
 		  $html .= '<div style="margin: 0 0 5px 0; border-top: 1px solid #C8C8C8;"></div>';
 	  }
-	  if ($count <= 5){
+	  if ($count <= 1){
 	    $html .= '<p style="line-height: 5em;">&nbsp;</p>'.PHP_EOL;
 	  }
+		$updated_time_parts = explode(' ', $updated);
+		$updated_time = trim($updated_time_parts[1]);
+		$updated_time = strtotime($updated_time);
+		$now_time = strtotime(date('H:i:s'));
+		$minute = strtotime('1:00');
+		//$html .= '<h3>'.$updated_time.' - '.$now_time.'</h3>'.PHP_EOL;
+		$difference_time = $now_time - $updated_time;
+    //$html .= '<h2>'.$difference_time.' '.date('H:i:s', $difference_time).'</h2>'.PHP_EOL;
 	  $html .= '<script language="JavaScript" type="text/javascript">'.PHP_EOL;
 	    $html .= 'setTimeout(function(){'.PHP_EOL;
 		      $html .= 'window.location.reload(1);'.PHP_EOL;
-      $html .= '}, 30000);'.PHP_EOL;
+      $html .= '}, 45000);'.PHP_EOL;
     $html .= '</script>'.PHP_EOL;
 	} else {
 	  print redirect_to('./?section=logout');

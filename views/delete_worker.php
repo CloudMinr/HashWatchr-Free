@@ -70,6 +70,20 @@
 			      $error = 1;
 			    }
 				}
+				$update_sql = "DROP TABLE IF EXISTS ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$worker_row['pool_account_id']."_".$worker_row['worker_id'];
+				$update = $wpdb->query($update_sql);
+			  if ($update){
+			    $error = 0;
+			  } else {
+			    $error = 1;
+			  }
+				$update_sql = "DROP TABLE IF EXISTS ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$worker_row['pool_account_id']."_".$worker_row['worker_id'];
+				$update = $wpdb->query($update_sql);
+			  if ($update){
+			    $error = 0;
+			  } else {
+			    $error = 1;
+			  }
 		  } else {
 			  $error = 1;
 			}

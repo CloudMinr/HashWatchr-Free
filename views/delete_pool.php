@@ -53,10 +53,10 @@
 			    } else {
 			      $error = 1;
 			    }
-					$sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
+					$sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
 				  $count = $wpdb->get_var($sql);
 				  if ($count >= 1){
-				    $update_sql = "UPDATE ".$wpdb->prefix."cloudminr_stats SET active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
+				    $update_sql = "UPDATE ".$wpdb->prefix."cloudminr_batches SET active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
 				    $update = $wpdb->query($update_sql);
 			      if ($update){
 			        $error = 0;
@@ -64,6 +64,19 @@
 			        $error = 1;
 			      }
 			    }
+					$sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
+				  $count = $wpdb->get_var($sql);
+				  if ($count >= 1){
+				    $update_sql = "UPDATE ".$wpdb->prefix."cloudminr_batches_hourly SET active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
+				    $update = $wpdb->query($update_sql);
+			      if ($update){
+			        $error = 0;
+			      } else {
+			        $error = 1;
+			      }
+			    }
+					
+					
 			    $sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats WHERE active='0', locked='1' WHERE active='1' AND pool_account_id='".$pool_account_id."' AND worker_id='".$result->worker_id."' AND user_id='".$current_user->ID."'";
 			    $count = $wpdb->get_var($sql);
 			    if ($count >= 1){

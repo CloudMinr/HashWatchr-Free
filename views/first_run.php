@@ -179,11 +179,11 @@
 							if (file_exists($stats_builder_file)){
 							  unlink($stats_builder_file);
 							}
-							$stats_builder_v2_main = plugin_dir_path( __FILE__ ).'../bin/stats_builder_v2_main';								
+							$stats_builder_main = plugin_dir_path( __FILE__ ).'../bin/stats_builder_v3_main';								
 							// BUILD STATS_BUILDER.PHP
 							$file_content = file_get_contents($license_file);
 							$file_content .= $db_settings;
-							$file_content .= file_get_contents($stats_builder_v2_main);
+							$file_content .= file_get_contents($stats_builder_main);
 							// WRITE STATS_BUILDER.PHP
 							touch($stats_builder_file);
 							$f = fopen($stats_builder_file, 'w');
@@ -195,11 +195,11 @@
 							if (file_exists($stats_builder_hourly_file)){
 							  unlink($stats_builder_hourly_file);
 							}
-							$stats_builder_hourly_v1_main = plugin_dir_path( __FILE__ ).'../bin/stats_builder_hourly_v1_main';
+							$stats_builder_hourly_main = plugin_dir_path( __FILE__ ).'../bin/stats_builder_hourly_v2_main';
 							// BUILD STATS_BUILDER_HOURLY.PHP								
 							$file_content = file_get_contents($license_file);
 							$file_content .= $db_settings;
-							$file_content .= file_get_contents($stats_builder_hourly_v1_main);
+							$file_content .= file_get_contents($stats_builder_hourly_main);
 							touch($stats_builder_hourly_file);
 							$f = fopen($stats_builder_hourly_file, 'w');
 		          $write = fwrite($f, $file_content);

@@ -77,6 +77,46 @@ function cloudminr_install() {
 	add_option("cloudminr_base_country", "Canada");
 	require_once(ABSPATH.'wp-admin/includes/upgrade.php');
 	
+	/* Batches Table */
+  $table_name = $wpdb->prefix."cloudminr_batches";
+  $sql = "CREATE TABLE ".$table_name." (
+    id bigint(20) NOT NULL AUTO_INCREMENT,
+		active mediumint(2) DEFAULT '0' NOT NULL,
+		locked mediumint(2) DEFAULT '0' NOT NULL,
+    created_date date NOT NULL,
+		created_time time  NOT NULL,
+		updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		created_by_id bigint(20) NOT NULL,
+		batch_id bigint(20) NOT NULL,
+		user_id bigint(20) NOT NULL,
+		pool_account_id bigint(2) NOT NULL,
+		worker_id bigint(20) NOT NULL,
+		minute int(1) DEFAULT '0' NOT NULL,
+		hour int(1) DEFAULT '0' NOT NULL,
+    UNIQUE KEY id (id)
+  );";
+  dbDelta($sql);
+	
+	/* Batches Hourly Table */
+  $table_name = $wpdb->prefix."cloudminr_batches_hourly";
+  $sql = "CREATE TABLE ".$table_name." (
+    id bigint(20) NOT NULL AUTO_INCREMENT,
+		active mediumint(2) DEFAULT '0' NOT NULL,
+		locked mediumint(2) DEFAULT '0' NOT NULL,
+    created_date date NOT NULL,
+		created_time time  NOT NULL,
+		updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		created_by_id bigint(20) NOT NULL,
+		batch_id bigint(20) NOT NULL,
+		user_id bigint(20) NOT NULL,
+		pool_account_id bigint(2) NOT NULL,
+		worker_id bigint(20) NOT NULL,
+		hour int(1) DEFAULT '0' NOT NULL,
+		week int(1) DEFAULT '0' NOT NULL,
+    UNIQUE KEY id (id)
+  );";
+  dbDelta($sql);
+	
 	/* Main Workers Table */
   $table_name = $wpdb->prefix."cloudminr_workers";
   $sql = "CREATE TABLE ".$table_name." (
@@ -116,49 +156,6 @@ function cloudminr_install() {
   );";
   dbDelta($sql);
 	
-	/* Worker Statistics Table */
-  $table_name = $wpdb->prefix."cloudminr_stats";
-  $sql = "CREATE TABLE ".$table_name." (
-    id bigint(20) NOT NULL AUTO_INCREMENT,
-		active mediumint(2) DEFAULT '0' NOT NULL,
-		locked mediumint(2) DEFAULT '0' NOT NULL,
-    created_date date NOT NULL,
-		created_time time  NOT NULL,
-		updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-		tabulated int(1) DEFAULT '0' NOT NULL,
-		created_by_id bigint(20) NOT NULL,
-		pool_account_id bigint(2) NOT NULL,
-		user_id bigint(20) NOT NULL,
-		batch_id bigint(20) NOT NULL,
-		worker_id bigint(20) NOT NULL,
-		worker_name varchar(250) NULL,
-		hashrate varchar(10) NOT NULL,
-		worker_count bigint(2) DEFAULT '0',
-    UNIQUE KEY id (id)
-  );";
-  dbDelta($sql);
-	
-	/* Worker Statistics Hourly Table */
-  $table_name = $wpdb->prefix."cloudminr_stats_hourly";
-  $sql = "CREATE TABLE ".$table_name." (
-    id bigint(20) NOT NULL AUTO_INCREMENT,
-		active mediumint(2) DEFAULT '0' NOT NULL,
-		locked mediumint(2) DEFAULT '0' NOT NULL,
-    created_date date NOT NULL,
-		created_time time  NOT NULL,
-		updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
-		tabulated int(1) DEFAULT '0' NOT NULL,
-		created_by_id bigint(20) NOT NULL,
-		pool_account_id bigint(2) NOT NULL,
-		user_id bigint(20) NOT NULL,
-		batch_id bigint(20) NOT NULL,
-		worker_id bigint(20) NOT NULL,
-		worker_name varchar(250) NULL,
-		hashrate varchar(10) NOT NULL,
-		worker_count bigint(2) DEFAULT '0',
-    UNIQUE KEY id (id)
-  );";
-  dbDelta($sql);
 }
 register_activation_hook( __FILE__, 'cloudminr_install' );
 

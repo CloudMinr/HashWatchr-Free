@@ -1,0 +1,250 @@
+mysql_connect(DB_HOST, DB_USER, DB_PASSWORD) or die(mysql_error());
+  mysql_select_db(DB_NAME) or die(mysql_error());
+	$start_time = microtime(true);
+	$action = 'getuserworkers';
+	$sql = "SELECT COUNT(id) FROM ".DB_PREFIX."cloudminr_workers WHERE active='1'";
+	$count_query = mysql_query($sql) or die(mysql_error());
+	$row = mysql_fetch_array($count_query);
+	$count = $row[0];
+	if ($count >= 1){
+		$cloudminr_pools = array();
+		$sql = "SELECT DISTINCT(pool_account_id) FROM ".DB_PREFIX."cloudminr_workers WHERE active='1'";
+		$worker_query = mysql_query($sql) or die(mysql_error());
+		while ($db_workers = mysql_fetch_array($worker_query)){
+			array_push($cloudminr_pools, $db_workers['pool_account_id']);
+		}
+		$processed_pool = array();
+		foreach ($cloudminr_pools as $cloudminr_pool){
+		  if (!in_array($cloudminr_pool[0], $processed_pool)){
+			  array_push($processed_pool, $cloudminr_pool[0]);
+				// BEGIN GENERATE NEW BATCH ID
+				$sql = "SELECT COUNT(DISTINCT(worker_id)) FROM ".DB_PREFIX."cloudminr_workers WHERE active='1' AND pool_account_id='".$cloudminr_pool[0]."'";
+				$worker_count_query = mysql_query($sql) or die(mysql_error());
+				$worker_count_row = mysql_fetch_array($worker_count_query);
+				$worker_count = $worker_count_row[0];
+				if ( (!is_numeric($worker_count)) || (empty($worker_count)) ){
+				  $worker_count = 0;
+				}
+				print 'Worker: '.$worker_count.PHP_EOL;
+	      $sql = "SELECT batch_id FROM ".DB_PREFIX."cloudminr_batches WHERE active='1' AND locked='0' AND pool_account_id='".$cloudminr_pool[0]."' ORDER BY updated DESC LIMIT 1";
+		    $batch_query = mysql_query($sql) or die(mysql_error());
+		    $batch_id_row = mysql_fetch_array($batch_query);
+		    $batch_id = $batch_id_row[0];
+		    if ( (empty($batch_id)) || ($batch_id <= 0)){
+		      $batch_id = 1;
+		    }
+				if (is_numeric($batch_id)){
+				  $sql = "SELECT COUNT(batch_id) FROM ".DB_PREFIX."cloudminr_batches WHERE active='1' AND locked='0' AND pool_account_id='".$cloudminr_pool[0]."' AND batch_id='".$batch_id."' AND created_date <= '".date('Y-m-d')."' ORDER BY updated DESC LIMIT 1";
+					$batch_count_query = mysql_query($sql) or die(mysql_error());
+					$batch_count_row = mysql_fetch_array($batch_count_query);
+					$batch_count = $batch_count_row[0];
+					print 'Batch: '.$batch_count.PHP_EOL;
+					if ($batch_count >= $worker_count){
+					  $batch_id = $batch_id + 1;
+					}
+				}
+				$sql = "SELECT * FROM ".DB_PREFIX."cloudminr_pools WHERE active='1' AND id='".$cloudminr_pool[0]."'";
+				if ( (isset($debugMode)) && ($debugMode >= 1) ){
+			    print $sql.PHP_EOL;
+				}
+				$this_pool_query = mysql_query($sql) or die(mysql_error());
+			  $this_pool = mysql_fetch_array($this_pool_query);
+				if ( (isset($debugMode)) && ($debugMode >= 1) ){
+			    print_r($this_pool);
+		      print $cloudminr_pool[0].PHP_EOL;
+        }
+				$data_in = json_decode(file_get_contents($this_pool['pool_api_url'].'&action='.$action.'&api_key='.$this_pool['pool_api_key'].'&id='.$this_pool['pool_api_id']));
+				if ( (isset($debugMode)) && ($debugMode >= 1) ){
+				  print_r($data_in);
+				}
+			  $get_userworkers = $data_in->{$action};
+			  $workers = $get_userworkers->{'data'};
+				if (isset($processed_workers)){
+				  unset($processed_workers);
+				}
+				$processed_workers = array();
+				foreach ($workers as $worker){
+				  $id = $worker->{'id'};
+					if ( (isset($debugMode)) && ($debugMode >= 1) ){
+					  print $id.PHP_EOL;
+					}
+					
+					//if (in_array($cloudminr_pool[0].'.'.$id, $cloudminr_workers)){
+		        $username = $worker->{'username'};
+		        $hashrate = $worker->{'hashrate'};
+						$sql = "SELECT pool_account_id, worker_id, user_id, name FROM ".DB_PREFIX."cloudminr_workers WHERE worker_id='".$id."' AND pool_account_id='".$cloudminr_pool[0]."' AND active='1'";
+						$worker_query = mysql_query($sql) or die(mysql_error());
+						$worker_row = mysql_fetch_array($worker_query);
+						if (!empty($worker_row['name'])){
+						  $worker_name = $worker_row['name'];
+						} else {
+						  $worker_name = '';
+						}
+						if ( (isset($debugMode)) && ($debugMode >= 1) ){
+					    print $worker_name.PHP_EOL;
+							print $hashrate.PHP_EOL;
+					  }
+						$table_name = DB_PREFIX.'cloudminr_stats_'.$worker_row['user_id'].'_'.$worker_row['pool_account_id'].'_'.$worker_row['worker_id'];
+						print $table_name.PHP_EOL;
+						$table_sql = "CREATE TABLE IF NOT EXISTS ".$table_name." (
+              id bigint(20) NOT NULL AUTO_INCREMENT,
+		          active mediumint(2) DEFAULT '0' NOT NULL,
+		          locked mediumint(2) DEFAULT '0' NOT NULL,
+              created_date date NOT NULL,
+		          created_time time  NOT NULL,
+		          updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		          created_by_id bigint(20) NOT NULL,
+		          pool_account_id bigint(2) NOT NULL,
+		          user_id bigint(20) NOT NULL,
+		          batch_id bigint(20) NOT NULL,
+		          worker_id bigint(20) NOT NULL,
+		          worker_name varchar(250) NULL,
+		          hashrate varchar(10) NOT NULL,
+		          worker_count bigint(2) DEFAULT '0',
+							UNIQUE KEY id (id)
+            );";
+						print $table_sql.PHP_EOL;
+            $insert_table = mysql_query($table_sql);
+						($insert_table);
+
+						$insert_sql = "INSERT INTO ".$table_name." SET active='1', locked='0', created_date='".date('Y-m-d')."', created_time='".date('H:i:s')."', ";
+						$insert_sql .= "created_by_id='0', ";
+						$insert_sql .= "pool_account_id='".$worker_row['pool_account_id']."', ";
+						$insert_sql .= "user_id='".$worker_row['user_id']."', ";
+						$insert_sql .= "batch_id='".$batch_id."', ";
+						$insert_sql .= "worker_id='".$worker_row['worker_id']."', ";
+            $insert_sql .= "worker_name='".$worker_name."', ";
+						$insert_sql .= "hashrate='".$hashrate."', ";
+						$insert_sql .= "worker_count='".$worker_count."'";
+						$insert = mysql_query($insert_sql);
+						if ( (isset($debugMode)) && ($debugMode >= 1) ){
+						  print $insert_sql;
+						}
+						if (!$insert){
+						  $error = 1;
+						} else {
+						  $error = 0;
+							array_push($processed_workers, $id);
+						}
+						if ($error == 1){
+						  print PHP_EOL.'Failed to write statistics :( '.PHP_EOL;
+						} else {
+						  print PHP_EOL.'Wrote statistics!'.PHP_EOL;
+						}
+						
+						$insert_sql = "INSERT INTO ".DB_PREFIX."cloudminr_batches SET active='1', locked='0', created_date='".date('Y-m-d')."', created_time='".date('H:i:s')."', ";
+						$insert_sql .= "created_by_id='0', ";
+            $insert_sql .= "batch_id='".$batch_id."', ";
+						$insert_sql .= "user_id='".$worker_row['user_id']."', ";
+						$insert_sql .= "pool_account_id='".$worker_row['pool_account_id']."', ";
+						$insert_sql .= "worker_id='".$worker_row['worker_id']."', ";
+						$insert_sql .= "minute='1'";
+						$insert = mysql_query($insert_sql);
+						if ( (isset($debugMode)) && ($debugMode >= 1) ){
+						  print $insert_sql;
+						}
+						if (!$insert){
+						  $error = 1;
+						} else {
+						  $error = 0;
+						}
+						if ($error == 1){
+						  print PHP_EOL.'Failed to write batch entry :( '.PHP_EOL;
+						} else {
+						  print PHP_EOL.'Wrote batch entry!'.PHP_EOL;
+						}
+						
+						
+					}
+				//}
+				$sql = "SELECT DISTINCT(worker_id) FROM ".DB_PREFIX."cloudminr_workers WHERE active='1' AND pool_account_id='".$cloudminr_pool[0]."'";
+				if ( (isset($debugMode)) && ($debugMode >= 1) ){
+			    print $sql.PHP_EOL;
+				}
+				$this_pool_query = mysql_query($sql) or die(mysql_error());
+			  $this_pool = mysql_fetch_array($this_pool_query);
+				foreach ($this_pool as $worker){
+				  if (!in_array($worker, $processed_workers)){
+					  $sql = "SELECT pool_account_id, worker_id, user_id, name FROM ".DB_PREFIX."cloudminr_workers WHERE worker_id='".$worker."' AND pool_account_id='".$cloudminr_pool[0]."'";
+            $worker_query = mysql_query($sql) or die(mysql_error());
+            $worker_row = mysql_fetch_array($worker_query);
+            if (!empty($worker_row['name'])){
+              $worker_name = $worker_row['name'];
+            } else {
+              $worker_name = '';
+            }
+						$table_name = DB_PREFIX.'cloudminr_stats_'.$worker_row['user_id'].'_'.$worker_row['pool_account_id'].'_'.$worker_row['worker_id'];
+						//print $table_name.PHP_EOL;
+						$table_sql = "CREATE TABLE IF NOT EXISTS ".$table_name." (
+              id bigint(20) NOT NULL AUTO_INCREMENT,
+		          active mediumint(2) DEFAULT '0' NOT NULL,
+		          locked mediumint(2) DEFAULT '0' NOT NULL,
+              created_date date NOT NULL,
+		          created_time time  NOT NULL,
+		          updated timestamp DEFAULT CURRENT_TIMESTAMP NOT NULL,
+		          created_by_id bigint(20) NOT NULL,
+		          pool_account_id bigint(2) NOT NULL,
+		          user_id bigint(20) NOT NULL,
+		          batch_id bigint(20) NOT NULL,
+		          worker_id bigint(20) NOT NULL,
+		          worker_name varchar(250) NULL,
+		          hashrate varchar(10) NOT NULL,
+		          worker_count bigint(2) DEFAULT '0',
+							UNIQUE KEY id (id)
+            );";
+            $insert_table = mysql_query($table_sql);
+						($insert_table);
+            $insert_sql = "INSERT INTO ".$table_name." SET active='1', locked='0', created_date='".date('Y-m-d')."', created_time='".date('H:i:s')."', ";
+            $insert_sql .= "created_by_id='0', ";
+            $insert_sql .= "pool_account_id='".$worker_row['pool_account_id']."', ";
+            $insert_sql .= "user_id='".$worker_row['user_id']."', ";
+            $insert_sql .= "batch_id='".$batch_id."', ";
+            $insert_sql .= "worker_id='".$worker_row['worker_id']."', ";
+            $insert_sql .= "worker_name='".$worker_name."', ";
+            $insert_sql .= "hashrate='0', ";
+            $insert_sql .= "worker_count='".$worker_count."'";
+            $insert = mysql_query($insert_sql);
+            if ( (isset($debugMode)) && ($debugMode >= 1) ){
+              print $insert_sql;
+            }
+            if (!$insert){
+              $error = 1;
+            } else {
+              $error = 0;
+            }
+            if ($error == 1){
+              print PHP_EOL.'Failed to write statistics :( '.PHP_EOL;
+            } else {
+              print PHP_EOL.'Wrote statistics!'.PHP_EOL;
+            }
+						
+						$insert_sql = "INSERT INTO ".DB_PREFIX."cloudminr_batches SET active='1', locked='0', created_date='".date('Y-m-d')."', created_time='".date('H:i:s')."', ";
+						$insert_sql .= "created_by_id='0', ";
+            $insert_sql .= "batch_id='".$batch_id."', ";
+						$insert_sql .= "user_id='".$worker_row['user_id']."', ";
+						$insert_sql .= "pool_account_id='".$worker_row['pool_account_id']."', ";
+						$insert_sql .= "worker_id='".$worker_row['worker_id']."', ";
+						$insert_sql .= "minute='1'";
+						$insert = mysql_query($insert_sql);
+						if ( (isset($debugMode)) && ($debugMode >= 1) ){
+						  print $insert_sql;
+						}
+						if (!$insert){
+						  $error = 1;
+						} else {
+						  $error = 0;
+						}
+						if ($error == 1){
+						  print PHP_EOL.'Failed to write batch entry :( '.PHP_EOL;
+						} else {
+						  print PHP_EOL.'Wrote batch entry!'.PHP_EOL;
+						}
+					}
+				}
+			}
+		}
+	}
+	$end_time = microtime(true);
+	$run_time = $end_time - $start_time;
+	print $run_time.PHP_EOL;
+?>

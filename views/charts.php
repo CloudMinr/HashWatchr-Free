@@ -80,7 +80,6 @@
 			  $html .= '</div>'.PHP_EOL;
 	    $html .= '</section>'.PHP_EOL;
 	  }
-	
 	  $dropdown_html = '<div class="row">'.PHP_EOL;
 	    $dropdown_html .= '<div class="col-md-12" style="text-align: center;">'.PHP_EOL;
 		    $dropdown_html .= '<p>&nbsp;</p>'.PHP_EOL;
@@ -207,197 +206,411 @@
 			  $pool_account_id = $wpdb->get_var($sql);
 			  if (is_numeric($current_user->ID)) {
 			    if (isset($_GET['worker'])){
-				    $sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
+				    $sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
 				  } else {
-			      $sql = "SELECT COUNT(id) FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC";
+			      $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC";
 				  }
-			  }	
+			  }
+				
 			  $count = $wpdb->get_var($sql);
 			  if ($count >= 1){
-			  // BEGIN BUILD CHRTS
+			    // BEGIN BUILD CHRTS
 				  $file_content = '<script type="text/javascript">';
 				  $file_content .= 'google.load("visualization", "1", {packages:["corechart"]});';
           $file_content .= 'google.setOnLoadCallback(drawChart);';
           $file_content .= 'function drawChart() {';
 				  $file_content .= 'var data = google.visualization.arrayToDataTable([';
 				  if (is_numeric($current_user->ID)) {
-				    if (isset($_GET['worker'])){
-					    switch ($time){
-						    case 'day':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."'  AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 24";  
-						  	break;
-						  	case 'day-to-minute':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."'  AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 1440";
-							  break;
-								case 'week':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."'  AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 168";  
-						  	break;
-						    default:
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."'  AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 60";  
-							  break;
-						  }
-					  } else {
-					    switch ($time){
-						    case 'day':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 24";
-							  break;
-							  case 'day-to-minute':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 1440";
-							  break;
-								case 'week':
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 168";
-							  break;
-						    default:
-							    $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' ORDER BY updated DESC LIMIT 60";
-							  break;
-						  }
-					  }
-			    }
-				  $batches = $wpdb->get_results($sql);					
-				  $batch_count = count($batches);
-				  $error = 0;
-				  switch ($time){
-				    case 'day':
-					    if ($batch_count == 0){
-						    $error = 1;
-						  }
-					  break;
-				    case 'day-to-minute':
-					    if ($batch_count == 0){
-						    $error = 1;
-						  }
-					  break;
-						case 'week':
-					    if ($batch_count == 0){
-						    $error = 1;
-						  }
-					  break;
-					  default:
-					    if ($batch_count == 0){
-						    $error = 1;
-						  }
-					  break;
-				  }
-				  if ($error == 0){
-				    $file_data = "['Time', 'Hashrate', 'Average'],";
-					  $this_batch_count = 0;
-					  $batches = array_reverse($batches);
-					  $hashrate_master_total = 0;
-				    foreach ($batches as $batch){
-					    $this_batch_count++;
-						  if (is_numeric($current_user->ID)) {
-						    if (isset($_GET['worker'])){
-							    switch ($time){
-								    case 'day':
-										case 'week':
-									    $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
-									  break;
-									  default:
-									    $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
-									  break;
-								  }
-							  } else {
-							    switch ($time){
-								    case 'day':
-										case 'week':
-									    $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_hourly WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' ORDER BY updated DESC";
-									  break;
-									  default:
-									    $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' ORDER BY updated DESC";
-									  break;
-								  }
-							  }
-				      }
-						  $batch_data = $wpdb->get_results($sql);
-						  $hashrate_total = 0;
-						  foreach ($batch_data as $batch_miner){
-						    $batch_created_time = $batch_miner->created_date.' '.$batch_miner->created_time;
-						    $hashrate_total = $hashrate_total + $batch_miner->hashrate;
-						  }
-						  $hashrate_master_total = $hashrate_master_total + $hashrate_total;
-						  $hashrate_average = $hashrate_master_total / $this_batch_count;
-						  $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
-				    }
-				  	$file_content .= $file_data;
-					  $file_content .= "]);";
-					  $file_content .= 'var options = {';
 					  if (isset($_GET['worker'])){
+						  //BEGIN WORKER CHARTS
 					    switch ($time){
 						    case 'day':
-							    $file_content .= "title: 'The Last 24 Hours - Total Hashrate for ".$batch_miner->worker_name."'";
-						  	break;
-							  case 'day-to-minute':
-							    $file_content .= "title: 'The Last 24 Hours - Total Hashrate for ".$batch_miner->worker_name."'";
-							  break;
-								case 'week':
-							    $file_content .= "title: 'The Last Week - Total Hashrate for ".$batch_miner->worker_name."'";
-						  	break;
+						      $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 29";
+						 	  break;
+						 	  case 'day-to-minute':
+						      $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 1728";
+						    break;
+							  case 'week':
+						      $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 173";
+						   	break;
 						    default:
-							    $file_content .= "title: 'The Last Hour - Total Hashrate for ".$batch_miner->worker_name."'";
-							  break;
+						      $sql = "SELECT DISTINCT batch_id FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."'AND user_id='".$current_user->ID."' AND worker_id='".$worker_id."' ORDER BY updated DESC LIMIT 65";
+						    break;
 						  }
-				  	} else {
-					    switch ($time){
-						    case 'day':
-							    $file_content .= "title: 'The Last 24 Hours - Workers Total Hashrate'";
-							  break;
-							  case 'day-to-minute':
-							    $file_content .= "title: 'The Last 24 Hours - Workers Total Hashrate'";
-							  break;
-								case 'week':
-							    $file_content .= "title: 'The Last Week - Workers Total Hashrate'";
-							  break;
-						    default:
-							    $file_content .= "title: 'The Last Hour - Workers Total Hashrate'";
-							  break;
-						  }
-					  }
-            $file_content .= '};';
-					  $file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
-            $file_content .= 'chart.draw(data, options);';
-            $file_content .= '}';
-					  $file_content .= '</script>';
-				    // END BUILD CHRTS
-				  } else {
-				    $file_data = "['Time', 'Hashrate', 'Average'],";
-					  $file_data .= "['', 0, 0],"; 
-				    $file_content .= $file_data;
-					  $file_content .= "]);";
-					  $file_content .= 'var options = {';
-				    if (isset($_GET['worker'])){
-					    switch ($time){
-						    case 'day':
-						  	case 'day-to-minute':
-						  	  $file_content .= "title: 'The Last 24 Hours - No Data for ".$batch_miner->worker_name."',";
-						  	break;
-								case 'week':
-						  	  $file_content .= "title: 'The Last Week - No Data for ".$batch_miner->worker_name."',";
-						  	break;
-						    default:
-						  	  $file_content .= "title: 'The Last Hour - No Data for ".$batch_miner->worker_name."',";
-						  	break;
-						  }
-					  } else {
-					    switch ($time){
-						    case 'day':
-						  	case 'day-to-minute':
-						  	  $file_content .= "title: 'The Last 24 Hours - No Data',";
-						  	break;
-								case 'week':
-						  	  $file_content .= "title: 'The Last Week - No Data',";
-						  	break;
-						    default:
-						  	  $file_content .= "title: 'The Last Hour - No Data',";
-						  	break;
-						  }
-					  }
-				  	$file_content .= "legend: {position: 'none'}";
-            $file_content .= '};';
-				  	$file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
-            $file_content .= 'chart.draw(data, options);';
-            $file_content .= '}';
-				  	$file_content .= '</script>';
-				  }
+				      $batches = $wpdb->get_results($sql);					
+				      $batch_count = count($batches);
+				      $error = 0;
+				      switch ($time){
+				        case 'day':
+					        if ($batch_count == 0){
+						        $error = 1;
+						      }
+					      break;
+				        case 'day-to-minute':
+					        if ($batch_count == 0){
+						        $error = 1;
+						      }
+					      break;
+						    case 'week':
+					        if ($batch_count == 0){
+						        $error = 1;
+						      }
+					      break;
+					      default:
+					        if ($batch_count == 0){
+						        $error = 1;
+						      }
+					      break;
+				      }
+				      if ($error == 0){
+				        $file_data = "['Time', 'Hashrate', 'Average'],";
+					      $this_batch_count = 0;
+					      $batches = array_reverse($batches);
+					      $hashrate_master_total = 0;
+						    $loop_count = 0;
+				        foreach ($batches as $batch){
+					        $this_batch_count++;
+						      if (is_numeric($current_user->ID)) {
+							      switch ($time){
+								      case 'day':
+									    case 'week':
+								        $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
+								      break;
+								      default:
+								        $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch->batch_id."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
+								      break;
+							      }
+				          }
+						      $batch_data = $wpdb->get_results($sql);
+						      $hashrate_total = 0;
+							    $loop_count++;
+						      foreach ($batch_data as $batch_miner){
+						        $batch_created_time = $batch_miner->created_date.' '.$batch_miner->created_time;
+						        $hashrate_total = $hashrate_total + $batch_miner->hashrate;
+						      }
+						      $hashrate_master_total = $hashrate_master_total + $hashrate_total;
+						      $hashrate_average = $hashrate_master_total / $this_batch_count;
+							    switch ($time){
+							      case 'day-to-minute':
+										  if ($batch_count >= 289){
+								        if ($loop_count >= 289){
+						              $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							          }
+											} else {
+											  $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											}
+							  	  break;
+								    default:
+										  if ($batch_count >= 6){
+								        if ($loop_count >= 6){
+						              $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							          }
+											} else {
+											  $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											}
+								    break;
+							    }							
+				        }
+				  	    $file_content .= $file_data;
+					      $file_content .= "]);";
+					      $file_content .= 'var options = {';
+					      switch ($time){
+						      case 'day':
+						        $file_content .= "title: 'The Last 24 Hours - Total Hashrate for ".$batch_miner->worker_name."'";
+						     	break;
+						      case 'day-to-minute':
+						        $file_content .= "title: 'The Last 24 Hours - Total Hashrate for ".$batch_miner->worker_name."'";
+						      break;
+							    case 'week':
+						        $file_content .= "title: 'The Last Week - Total Hashrate for ".$batch_miner->worker_name."'";
+						     	break;
+						       default:
+						        $file_content .= "title: 'The Last Hour - Total Hashrate for ".$batch_miner->worker_name."'";
+						      break;
+						    }
+                $file_content .= '};';
+					      $file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
+                $file_content .= 'chart.draw(data, options);';
+                $file_content .= '}';
+					      $file_content .= '</script>';
+					    }
+				    } else {
+						  //BEGIN POOL CHARTS
+				      $sql = "SELECT COUNT(DISTINCT(worker_id)) FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."'";
+							$count = $wpdb->get_var($sql);
+							if ($count >= 1){
+							  $sql = "SELECT DISTINCT(worker_id) FROM ".$wpdb->prefix."cloudminr_batches WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."'";
+								$results = $wpdb->get_results($sql);
+								$worker_ids = array();
+								$batch_ids = array();
+								foreach ($results as $result){
+								  $worker_id = $result->worker_id;
+									if (!in_array($worker_id, $worker_ids)){
+									  array_push($worker_ids, $worker_id);
+									}
+									switch ($time){
+									  case 'day':
+										  $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 29";
+										break;
+									  case 'day-to-minute':
+										  $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 1728";
+										break;
+									  default:
+									    $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 65";
+									  break;
+									}
+									$batch_count = $wpdb->get_var($sql);
+									$error = 0;
+									switch ($time){
+									  case 'day':
+										  if ($batch_count >= 1){
+											  $sql = "SELECT DISTINCT(batch_id) FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 29";
+												$results = $wpdb->get_results($sql);
+												foreach ($results as $result){
+												  if (!in_array($result->batch_id, $batch_ids)){
+													  array_push($batch_ids, $result->batch_id);
+													}
+												}
+											} else {
+											  $error = 1;
+											}
+										break;
+									  case 'day-to-minute':
+										  if ($batch_count >= 1){
+											  $sql = "SELECT DISTINCT(batch_id) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 1728";
+												$results = $wpdb->get_results($sql);
+												foreach ($results as $result){
+												  if (!in_array($result->batch_id, $batch_ids)){
+													  array_push($batch_ids, $result->batch_id);
+													}
+												}
+											} else {
+											  $error = 1;
+											}
+										break;
+										case 'week':
+										  if ($batch_count >= 1){
+											  $sql = "SELECT DISTINCT(batch_id) FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 203";
+												$results = $wpdb->get_results($sql);
+												foreach ($results as $result){
+												  if (!in_array($result->batch_id, $batch_ids)){
+													  array_push($batch_ids, $result->batch_id);
+													}
+												}
+											} else {
+											  $error = 1;
+											}
+										break;
+									  default:
+										  if ($batch_count >= 1){
+											  $sql = "SELECT DISTINCT(batch_id) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 65";
+												$results = $wpdb->get_results($sql);
+												foreach ($results as $result){
+												  if (!in_array($result->batch_id, $batch_ids)){
+													  array_push($batch_ids, $result->batch_id);
+													}
+												}
+											} else {
+											  $error = 1;
+											}
+										break;
+									}	
+								}
+								if ($error == 0){
+								  $file_data = "['Time', 'Hashrate', 'Average'],";
+					        $this_batch_count = 0;
+									switch ($time){
+									  case 'day-to-minute':
+										case 'hour':
+										  $batches = array_reverse($batch_ids);
+										break;
+										default:
+										  $batches = $batch_ids;
+											asort($batches);
+										break;
+									}
+					        $hashrate_master_total = 0;
+						      $loop_count = 0;
+				          foreach ($batches as $batch){
+					          $this_batch_count++;
+										$hashrate_total = 0;
+										$loop_count++;
+										foreach ($worker_ids as $worker_id){
+										  switch ($time){
+								        case 'day':
+									      case 'week':
+								          $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
+								        break;
+								        default:
+								          $sql = "SELECT * FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$worker_id." WHERE active='1' AND locked='0' AND pool_account_id='".$pool_account_id."' AND user_id='".$current_user->ID."' AND batch_id='".$batch."' AND worker_id='".$worker_id."' ORDER BY updated DESC";
+								        break;
+							        }
+											$batch_data = $wpdb->get_results($sql);
+											foreach ($batch_data as $batch_miner){
+						            $batch_created_time = $batch_miner->created_date.' '.$batch_miner->created_time;
+						            $hashrate_total = $hashrate_total + $batch_miner->hashrate;
+						          }
+										}
+										$hashrate_master_total = $hashrate_master_total + $hashrate_total;
+						        $hashrate_average = $hashrate_master_total / $this_batch_count;
+										switch ($time){
+										  case 'day':
+										    if ($batch_count >= 29){
+								          if ($loop_count >= 29){
+						                $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							            }
+										   	} else {
+											    $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											  }
+							  	    break;
+							        case 'day-to-minute':
+										    if ($batch_count >= 289){
+								          if ($loop_count >= 289){
+						                $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							            }
+										   	} else {
+											    $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											  }
+							  	    break;
+											case 'week':
+										    if ($batch_count >= 203){
+								          if ($loop_count >= 203){
+						                $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							            }
+										   	} else {
+											    $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											  }
+							  	    break;
+								      default:
+										    if ($batch_count >= 6){
+								          if ($loop_count >= 6){
+						                $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+							            }
+											  } else {
+										      $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
+											  }
+								      break;
+							      }
+									}
+									$file_content .= $file_data;
+					        $file_content .= "]);";
+					        $file_content .= 'var options = {';
+					        switch ($time){
+						        case 'day':
+						          $file_content .= "title: 'The Last 24 Hours - Total Hashrate'";
+						       	break;
+						        case 'day-to-minute':
+						          $file_content .= "title: 'The Last 24 Hours - Total Hashrate'";
+						        break;
+							      case 'week':
+						          $file_content .= "title: 'The Last Week - Total Hashrate'";
+						     	  break;
+						        default:
+						          $file_content .= "title: 'The Last Hour - Total Hashrate'";
+						        break;
+						      }
+                  $file_content .= '};';
+					        $file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
+                  $file_content .= 'chart.draw(data, options);';
+                  $file_content .= '}';
+					        $file_content .= '</script>';
+							  } else {
+								  $file_content = '<script type="text/javascript">';
+		              $file_content .= 'google.load("visualization", "1", {packages:["corechart"]});';
+                  $file_content .= 'google.setOnLoadCallback(drawChart);';
+                  $file_content .= 'function drawChart() {';
+		              $file_content .= 'var data = google.visualization.arrayToDataTable([';
+	                $file_data = "['Time', 'Hashrate', 'Average'],";
+		              $file_data .= "['', 0, 0],"; 
+		              $file_content .= $file_data;
+		              $file_content .= "]);";
+		              $file_content .= 'var options = {';
+		              if (isset($_GET['worker'])){
+		                switch ($time){
+			                case 'day':
+				              case 'day-to-minute':
+				                $file_content .= "title: 'The Last 24 Hours - No Data for ".$batch_miner->worker_name."',";
+				              break;
+							        case 'week':
+				                $file_content .= "title: 'The Last Week - No Data for ".$batch_miner->worker_name."',";
+				              break;
+			                default:
+			                  $file_content .= "title: 'The Last Hour - No Data for ".$batch_miner->worker_name."',";
+				              break;
+			              }
+		              } else {
+		                switch ($time){
+			                case 'day':
+				              case 'day-to-minute':
+				                $file_content .= "title: 'The Last 24 Hours - No Data',";
+				              break;
+							        case 'week':
+				                $file_content .= "title: 'The Last Week - No Data',";
+				              break;
+			                default:
+				                $file_content .= "title: 'The Last Hour - No Data',";
+				              break;
+			              }
+		              }
+		              $file_content .= "legend: {position: 'none'}";
+                  $file_content .= '};';
+		              $file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
+                  $file_content .= 'chart.draw(data, options);';
+                  $file_content .= '}';
+			  	        $file_content .= '</script>';
+								}
+							} else {
+							  $file_content = '<script type="text/javascript">';
+		            $file_content .= 'google.load("visualization", "1", {packages:["corechart"]});';
+                $file_content .= 'google.setOnLoadCallback(drawChart);';
+                $file_content .= 'function drawChart() {';
+		            $file_content .= 'var data = google.visualization.arrayToDataTable([';
+	              $file_data = "['Time', 'Hashrate', 'Average'],";
+		            $file_data .= "['', 0, 0],"; 
+		            $file_content .= $file_data;
+		            $file_content .= "]);";
+		            $file_content .= 'var options = {';
+		            if (isset($_GET['worker'])){
+		              switch ($time){
+			              case 'day':
+				            case 'day-to-minute':
+				              $file_content .= "title: 'The Last 24 Hours - No Data for ".$batch_miner->worker_name."',";
+				            break;
+							      case 'week':
+				              $file_content .= "title: 'The Last Week - No Data for ".$batch_miner->worker_name."',";
+				            break;
+			              default:
+			                $file_content .= "title: 'The Last Hour - No Data for ".$batch_miner->worker_name."',";
+				            break;
+			            }
+		            } else {
+		              switch ($time){
+			              case 'day':
+				            case 'day-to-minute':
+				              $file_content .= "title: 'The Last 24 Hours - No Data',";
+				            break;
+							      case 'week':
+				              $file_content .= "title: 'The Last Week - No Data',";
+				            break;
+			              default:
+				              $file_content .= "title: 'The Last Hour - No Data',";
+				            break;
+			            }
+		            }
+		            $file_content .= "legend: {position: 'none'}";
+                $file_content .= '};';
+		            $file_content .= "var chart = new google.visualization.LineChart(document.getElementById('cloudminr_stats_the_last_24hrs'));";
+                $file_content .= 'chart.draw(data, options);';
+                $file_content .= '}';
+			  	      $file_content .= '</script>';
+							}
+				      $batches = $wpdb->get_results($sql);					
+				      $batch_count = count($batches);
+				      $error = 0;
+						  //END POOL CHARTS
+				    }
+					} 
+					//END BUILD CHARTS
 			  } else {
 			    $file_content = '<script type="text/javascript">';
 		      $file_content .= 'google.load("visualization", "1", {packages:["corechart"]});';
