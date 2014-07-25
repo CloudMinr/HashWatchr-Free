@@ -352,6 +352,9 @@
 									  case 'day':
 										  $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 29";
 										break;
+										case 'week':
+										  $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_hourly_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 203";
+										break;
 									  case 'day-to-minute':
 										  $sql = "SELECT COUNT(DISTINCT(batch_id)) FROM ".$wpdb->prefix."cloudminr_stats_".$current_user->ID."_".$pool_account_id."_".$result->worker_id." WHERE active='1' AND locked='0' AND user_id='".$current_user->ID."' AND pool_account_id='".$pool_account_id."' ORDER BY updated DESC LIMIT 1728";
 										break;
@@ -474,7 +477,7 @@
 							  	    break;
 											case 'week':
 										    if ($batch_count >= 203){
-								          if ($loop_count >= 203){
+								          if ($loop_count >= 23){
 						                $file_data .= "['".$batch_created_time."', ".$hashrate_total.", ".$hashrate_average."],";
 							            }
 										   	} else {
